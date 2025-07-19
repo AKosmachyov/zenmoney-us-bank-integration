@@ -1,7 +1,7 @@
-const Storage = require('./utils/Storage');
-const Logger = require('./utils/Logger');
+import Storage from './utils/Storage.js';
+import { logger } from './utils/Logger.ts';
 
-class Zenmoney {
+export default class Zenmoney {
 
   constructor(username, password) {
     this.username = username;
@@ -66,7 +66,7 @@ class Zenmoney {
       this.user = Object.assign(this.user || {}, data);
       this.saveUser()
     } catch (err) {
-      Logger.error('Login request failed:', err);
+      logger.error('Login request failed:', err);
       throw err;
     }
   }
@@ -79,10 +79,9 @@ class Zenmoney {
       currentClientTimestamp: Math.round(Date.now() / 1000)
     };
 
-    if (updateData && updateData.transaction) {
-      // TODO: send account data based on transaction
-      payload.transaction = data.transaction;
-      payload.account = [];
+    if (updateData && updateData.transactions) {
+      payload.transaction = updateData.transactions;
+      payload.account = updateData.accounts;
     }
 
     try {
@@ -115,10 +114,20 @@ class Zenmoney {
       this.user.serverTimestamp = data.serverTimestamp;
       this.saveUser()
     } catch (err) {
-      Logger.error('Syncronization failed:', err);
+      logger.error('Syncronization failed:', err);
       throw err;
     }
   }
-}
 
-module.exports = Zenmoney;
+  getStorage() {
+    return this.storage;
+  }
+
+  getAccount(id) {
+    return this.storage.getAccount(id);
+  }
+
+  getTransactions(filter) {
+    return this.storage.getTransactions(filter);
+  }
+}

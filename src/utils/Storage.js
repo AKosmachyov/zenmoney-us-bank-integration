@@ -1,8 +1,9 @@
-const fs = require('fs');
-const path = require('path');
-const Logger = require('./Logger');
+import fs from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { logger } from './Logger.ts';
 
-class Storage {
+export default class Storage {
 
   constructor(username) {
     this.username = username;
@@ -13,7 +14,9 @@ class Storage {
   }
 
   getUserDir() {
-    return path.join(__dirname, '../..', 'zenmoney-content', this.username);
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    return join(__dirname, '../..', 'zenmoney-content', this.username);
   }
 
   checkDirectory() {
@@ -24,7 +27,7 @@ class Storage {
   }
 
   getUser() {
-    const userFile = path.join(this.getUserDir(), this.userFile)
+    const userFile = join(this.getUserDir(), this.userFile)
     if (!fs.existsSync(userFile)) {
       return null;
     }
@@ -33,13 +36,13 @@ class Storage {
 
   saveUser(data) {
     this.checkDirectory();
-    const userFile = path.join(this.getUserDir(), this.userFile)
+    const userFile = join(this.getUserDir(), this.userFile)
     fs.writeFileSync(userFile, JSON.stringify(data, null, 2), 'utf8');
   }
 
   saveInitialDiff(data) {
     this.checkDirectory();
-    const diffFile = path.join(this.getUserDir(), this.diffFILE)
+    const diffFile = join(this.getUserDir(), this.diffFILE)
     fs.writeFileSync(diffFile, JSON.stringify(data, null, 2), 'utf8');
   }
 
@@ -50,9 +53,9 @@ class Storage {
   }
 
   sortSavedTransactions() {
-    const localPath = path.join(this.getUserDir(), this.transactions);
+    const localPath = join(this.getUserDir(), this.transactions);
     if (!fs.existsSync(localPath)) {
-      Logger.error('Transactions file not found');
+      logger.error('Transactions file not found');
       return;
     }
 
@@ -61,7 +64,7 @@ class Storage {
     try {
       existingTransactions = JSON.parse(fs.readFileSync(localPath, 'utf8'));
     } catch (e) {
-      Logger.error('Failed to parse transactions:', e);
+      logger.error('Failed to parse transactions:', e);
       return;
     }
 
@@ -71,10 +74,22 @@ class Storage {
 
   updateTransactions(transactions) {
     this.checkDirectory();
-    const localPath = path.join(this.getUserDir(), this.transactions);
+    const localPath = join(this.getUserDir(), this.transactions);
     let existingTransactions = [];
+
+    let newTransactions = [];
+    let deletedTransactions = [];
+
+    transactions.forEach(item => {
+      if (item.deleted) {
+        deletedTransactions.push(item);
+      } else {
+        newTransactions.push(item);
+      }
+    });
+
     if (!fs.existsSync(localPath)) {
-      existingTransactions = this.sortTransactions(transactions);
+      existingTransactions = this.sortTransactions(newTransactions);
       fs.writeFileSync(localPath, JSON.stringify(existingTransactions, null, 2), 'utf8');
       return;
     }
@@ -86,27 +101,37 @@ class Storage {
       return;
     }
 
-    for (const newTx of transactions) {
-      let insertIdx = 0;
-      let newDate = new Date(newTx.date);
-      while (insertIdx < existingTransactions.length) {
-        let item = existingTransactions[insertIdx];
-        let existingDate = new Date(item.date);
-
-        if (newDate >= existingDate) {
-          break;
-        }
-
-        insertIdx++;
+    for (const item of deletedTransactions) {
+      let insertIdx = existingTransactions.findIndex(el => el.id === item.id);
+      if (insertIdx !== -1) {
+        existingTransactions.splice(insertIdx, 1);
       }
-      existingTransactions.splice(insertIdx, 0, newTx);
+    }
+
+    for (const item of newTransactions) {
+      const existingIdx = existingTransactions.findIndex(tx => tx.id === item.id);
+      if (existingIdx !== -1) {
+        existingTransactions[existingIdx] = item;
+      } else {
+        let index = 0;
+        let newDate = new Date(item.date);
+        while (index < existingTransactions.length) {
+          let existingItem = existingTransactions[index];
+          let existingDate = new Date(existingItem.date);
+          if (newDate >= existingDate) {
+            break;
+          }
+          index++;
+        }
+        existingTransactions.splice(index, 0, item);
+      }
     }
 
     fs.writeFileSync(localPath, JSON.stringify(existingTransactions, null, 2), 'utf8');
   }
 
   updateAccounts(accounts) {
-    const localPath = path.join(this.getUserDir(), this.accounts);
+    const localPath = join(this.getUserDir(), this.accounts);
     let existingAccounts = [];
     if (!fs.existsSync(localPath)) {
       existingAccounts = accounts;
@@ -133,6 +158,51 @@ class Storage {
     const mergedAccounts = Object.values(existingMap);
     fs.writeFileSync(localPath, JSON.stringify(mergedAccounts, null, 2), 'utf8');
   }
-}
 
-module.exports = Storage;
+  getAccount(id) {
+    const localPath = join(this.getUserDir(), this.accounts);
+    if (!fs.existsSync(localPath)) {
+      logger.error('Accounts file not found');
+      return null;
+    }
+
+    let accounts = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+    return accounts.find(account => account.id === id);
+  }
+
+  getTransactions(filter) {
+    const localPath = join(this.getUserDir(), this.transactions);
+    if (!fs.existsSync(localPath)) {
+      logger.error('Transactions file not found');
+      return [];
+    }
+
+    let transactions = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+
+    if (filter) {
+      transactions = transactions.filter(item => {
+        if (filter.startDate) {
+          const transactionDate = new Date(item.date);
+          if (filter.startDate > transactionDate) {
+            return false
+          }
+        }
+
+        if (filter.merchant && filter.merchant != item.merchant) {
+          return false;
+        }
+
+        if (
+          filter.bankAccountId &&
+          filter.bankAccountId != item.incomeAccount &&
+          filter.bankAccountId != item.outcomeAccount
+        ) {
+          return false;
+        }
+
+        return true;
+      });
+    }
+    return transactions;
+  }
+}

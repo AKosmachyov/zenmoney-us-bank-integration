@@ -7,11 +7,12 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Program",
+            "name": "Run main.ts",
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}/src/main.js",
+            "program": "${workspaceFolder}/src/main.ts",
+            "runtimeArgs": ["--experimental-transform-types"],
             "envFile": "${workspaceFolder}/.env"
         }
     ]

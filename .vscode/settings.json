@@ -1,0 +1,25 @@
+{
+    // --- Editor ---
+    "editor.insertSpaces": false,
+    "editor.occurrencesHighlightDelay": 0,
+
+    // --- Language Specific ---
+    "[typescript]": {
+		"editor.defaultFormatter": "vscode.typescript-language-features",
+		"editor.formatOnSave": true
+	},
+	"[javascript]": {
+		"editor.defaultFormatter": "vscode.typescript-language-features",
+		"editor.formatOnSave": true
+	},
+
+    "typescript.preferences.quoteStyle": "single",
+
+    // --- Files ---
+	"files.trimTrailingWhitespace": true,
+	"files.insertFinalNewline": true,
+	"files.exclude": {
+		".git": true,
+		"**/.DS_Store": true
+	}
+}
