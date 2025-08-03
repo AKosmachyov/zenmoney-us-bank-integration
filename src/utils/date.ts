@@ -15,7 +15,20 @@ export function getDateTwoWeeksAgo(date: Date): Date {
     return twoWeeksAgo;
 }
 
-export function toIsoDateString(text: string): string {
+export function dateToZenmoneyTextFormat(date: Date): string {
+    let day = date.getDate().toString().padStart(2, '0');
+    let month = (date.getMonth() + 1).toString().padStart(2, '0');
+    let year = date.getFullYear().toString();
+    return `${year}-${month}-${day}`;
+}
+
+export function toISODateString(text: string): string {
     const [mm, dd, yyyy] = text.split('/').map(s => s.padStart(2, '0'));
     return `${yyyy}-${mm}-${dd}`;
+}
+
+const msPerDay = 1000 * 60 * 60 * 24;
+export function daysDiff(a: Date, b: Date): number {
+    let diffMS = Math.abs(a.getTime() - b.getTime());
+    return Math.floor(diffMS / msPerDay);
 }

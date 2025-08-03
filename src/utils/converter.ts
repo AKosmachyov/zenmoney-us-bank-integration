@@ -4,10 +4,16 @@ import { randomUUID } from 'crypto';
 
 export function convertQifToZenmoney(qif: Qif): BankTransaction[] {
 	return qif.transactions.map(transaction => {
+		let comment = [transaction.payee];
+		if (transaction.category) {
+			// for PayPal source of payment
+			comment.push(transaction.category);
+		}
+
 		return {
 			date: transaction.date,
 			amount: transaction.amount,
-			comment: transaction.payee,
+			comment: comment.join(', '),
 		};
 	});
 }
@@ -125,3 +131,4 @@ function replacer(key: string, value: any) {
 	}
 	return value;
 }
+

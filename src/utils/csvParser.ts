@@ -1,7 +1,7 @@
 import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline';
 import type { BankTransaction } from './typing.ts';
-import { toIsoDateString } from './date.ts';
+import { toISODateString } from './date.ts';
 
 export async function parseCSVToBankTx(filePath: string): Promise<BankTransaction[]> {
 	const inStream = createReadStream(filePath);
@@ -28,7 +28,7 @@ export async function parseCSVToBankTx(filePath: string): Promise<BankTransactio
 			continue;
 		}
 		const localDate = cols[idxDate];
-		const date = toIsoDateString(localDate);
+		const date = toISODateString(localDate);
 		const comment = typeof idxDesc === 'number' ? cols[idxDesc] : '';
 		let amount = parseFloat(cols[idxAmt]);
 		if (Number.isNaN(amount)) {

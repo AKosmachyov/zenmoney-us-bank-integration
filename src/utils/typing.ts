@@ -21,7 +21,6 @@ export type Transaction = {
     latitude: null,
     opOutcome: null,
     qrCode: null,
-    mcc: null,
     hold: null,
     user: number,
     longitude: null,

@@ -28,8 +28,8 @@ describe('Bank file parser', () => {
 		let result = await parseFile(filePath, { dateFormat: 'us' });
 		let bankTransactions = convertQifToZenmoney(result);
 		const valid = [
-			{ date: '2025-06-01', amount: -250, comment: 'William' },
-			{ date: '2025-07-05', amount: 100, comment: 'William' }
+			{ date: '2025-06-01', amount: -250, comment: 'William, Website Payment' },
+			{ date: '2025-07-05', amount: 100, comment: 'William, Mobile Payment' }
 		];
 		assert.deepStrictEqual(bankTransactions, valid);
 	});

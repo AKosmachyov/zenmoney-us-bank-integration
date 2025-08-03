@@ -25,5 +25,8 @@
   "devDependencies": {
     "@types/node": "^24.0.15"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "inquirer": "^12.9.0"
+  }
 }
