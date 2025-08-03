@@ -1,6 +1,6 @@
 import { convertQifToZenmoney, convertBankTransaction, convertAccountToUpdate } from './converter.ts';
 import { parseFile } from './qif2json.ts';
-import { type Zenmoney } from './typing.ts';
+import type Zenmoney from '../Zenmoney.ts';
 import { logger, debugStringForBankTransaction, debugStringForTransaction } from './Logger.ts';
 import { type BankTransaction, type Transaction } from './typing.ts';
 import readline from 'readline';

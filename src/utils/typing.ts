@@ -65,7 +65,7 @@ export type TransactionUpdateType = {
     incomeInstrument: number,
     outcomeInstrument: number,
     viewed: number,
-    payee: null,
+    payee: null | string,
     originalPayee: null,
     opOutcomeInstrument: null,
 }
@@ -74,7 +74,7 @@ type AccountType = "ccard" | "cash" | "checking" | "deposit" | "debt";
 type BalanceCorrectionType = "request";
 type EndDateOffsetInterval = "year" | "day" | "month" | null;
 type PayoffInterval = "month" | null;
-interface Account {
+export type Account = {
     id: string;
     user: number;
     instrument: number;
@@ -103,7 +103,7 @@ interface Account {
     payoffInterval: PayoffInterval;
 }
 
-interface AccountUpdateType {
+export type AccountUpdateType = {
     id: string;
     user: number;
     instrument: number;
@@ -139,15 +139,6 @@ export type BankTransaction = {
     comment: string,
 }
 
-export type Zenmoney = {
-    canSkipLogin: () => boolean;
-    login: () => Promise<void>;
-    syncDiff: (updateData?: DiffUpdateData) => Promise<void>;
-    getAccount: (id: string) => Account;
-    getAccounts: (filter: AccountFilter) => Account[];
-    getTransactions: (filter: StorageFilter) => Transaction[];
-}
-
 export type DiffUpdateData = {
     transactions: TransactionUpdateType[],
     accounts: AccountUpdateType[],
@@ -163,4 +154,18 @@ export type StorageFilter = {
 
 export type AccountFilter = {
     title?: string,
+}
+
+export type UserModel = {
+    access_token: string,
+    token_type: string,
+    expires_in: number,
+    refresh_token: string,
+    serverTimestamp: number
+}
+
+export type Merchant = {
+    id: string,
+    user: number,
+    title: string,
 }

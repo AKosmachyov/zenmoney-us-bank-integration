@@ -1,9 +1,14 @@
-import Storage from './utils/Storage.js';
+import Storage from './utils/Storage.ts';
 import { logger } from './utils/Logger.ts';
+import type { Account, AccountFilter, DiffUpdateData, Merchant, StorageFilter, Transaction, UserModel } from './utils/typing.ts';
 
 export default class Zenmoney {
+  username: string;
+  password: string;
+  storage: Storage;
+  user: UserModel | null;
 
-  constructor(username, password) {
+  constructor(username: string, password: string) {
     this.username = username;
     this.password = password;
 
@@ -16,7 +21,7 @@ export default class Zenmoney {
   }
 
   headers(withToken = false) {
-    var headers = {
+    var headers: any = {
       'accept': '*/*',
       'accept-Encoding': 'gzip',
       'accept-Language': 'en-US,en;q=0.9',
@@ -26,7 +31,7 @@ export default class Zenmoney {
       'user-Agent': 'Zenmoney/i8.5.1-579'
     }
 
-    if (withToken) {
+    if (withToken && this.user) {
       headers['authorization'] = `Bearer ${this.user.access_token}`;
     }
 
@@ -34,7 +39,9 @@ export default class Zenmoney {
   }
 
   saveUser() {
-    this.storage.saveUser(this.user);
+    if (this.user) {
+      this.storage.saveUser(this.user);
+    }
   }
 
   async login() {
@@ -71,9 +78,12 @@ export default class Zenmoney {
     }
   }
 
-  async syncDiff(updateData) {
+  async syncDiff(updateData?: DiffUpdateData) {
+    if (!this.user) {
+      throw new Error('Not logged in');
+    }
     let serverTimestamp = this.user && this.user.serverTimestamp || 0;
-    const payload = {
+    let payload: any = {
       serverTimestamp: serverTimestamp,
       currentClientTimezoneOffset: -240,
       currentClientTimestamp: Math.round(Date.now() / 1000)
@@ -119,19 +129,19 @@ export default class Zenmoney {
     }
   }
 
-  getStorage() {
-    return this.storage;
-  }
-
-  getAccount(id) {
+  getAccount(id: string): Account | null {
     return this.storage.getAccount(id);
   }
 
-  getAccounts(filter) {
+  getAccounts(filter: AccountFilter): Account[] {
     return this.storage.getAccounts(filter);
   }
 
-  getTransactions(filter) {
+  getTransactions(filter: StorageFilter): Transaction[] {
     return this.storage.getTransactions(filter);
+  }
+
+  getMerchant(title: string): Merchant | null {
+    return this.storage.getMerchant(title);
   }
 }

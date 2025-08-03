@@ -3,15 +3,17 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from './Logger.ts';
 import { createDateWithoutTimeZone } from './date.ts';
+import type { Account, AccountFilter, Merchant, StorageFilter, Transaction, UserModel } from './typing.ts';
 
 export default class Storage {
+  username: string;
+  diffFILE = 'diff.json';
+  userFile = 'user.json';
+  transactions = 'transactions.json';
+  accounts = 'accounts.json';
 
-  constructor(username) {
+  constructor(username: string) {
     this.username = username;
-    this.diffFILE = 'diff.json';
-    this.userFile = 'user.json';
-    this.transactions = 'transactions.json';
-    this.accounts = 'accounts.json';
   }
 
   getUserDir() {
@@ -27,7 +29,7 @@ export default class Storage {
     }
   }
 
-  getUser() {
+  getUser(): UserModel | null {
     const userFile = join(this.getUserDir(), this.userFile)
     if (!fs.existsSync(userFile)) {
       return null;
@@ -35,21 +37,21 @@ export default class Storage {
     return JSON.parse(fs.readFileSync(userFile, 'utf8'));
   }
 
-  saveUser(data) {
+  saveUser(data: UserModel) {
     this.checkDirectory();
     const userFile = join(this.getUserDir(), this.userFile)
     fs.writeFileSync(userFile, JSON.stringify(data, null, 2), 'utf8');
   }
 
-  saveInitialDiff(data) {
+  saveInitialDiff(data: any) {
     this.checkDirectory();
     const diffFile = join(this.getUserDir(), this.diffFILE)
     fs.writeFileSync(diffFile, JSON.stringify(data, null, 2), 'utf8');
   }
 
-  sortTransactions(transactions) {
+  sortTransactions(transactions: Transaction[]) {
     return transactions.sort((a, b) => {
-      return new Date(b.date) - new Date(a.date);
+      return +new Date(b.date) - +new Date(a.date);
     })
   }
 
@@ -60,7 +62,7 @@ export default class Storage {
       return;
     }
 
-    let existingTransactions = [];
+    let existingTransactions: Transaction[] = [];
 
     try {
       existingTransactions = JSON.parse(fs.readFileSync(localPath, 'utf8'));
@@ -73,13 +75,13 @@ export default class Storage {
     fs.writeFileSync(localPath, JSON.stringify(existingTransactions, null, 2), 'utf8');
   }
 
-  updateTransactions(transactions) {
+  updateTransactions(transactions: Transaction[]) {
     this.checkDirectory();
     const localPath = join(this.getUserDir(), this.transactions);
-    let existingTransactions = [];
+    let existingTransactions: Transaction[] = [];
 
-    let newTransactions = [];
-    let deletedTransactions = [];
+    let newTransactions: Transaction[] = [];
+    let deletedTransactions: Transaction[] = [];
 
     transactions.forEach(item => {
       if (item.deleted) {
@@ -131,9 +133,9 @@ export default class Storage {
     fs.writeFileSync(localPath, JSON.stringify(existingTransactions, null, 2), 'utf8');
   }
 
-  updateAccounts(accounts) {
+  updateAccounts(accounts: Account[]) {
     const localPath = join(this.getUserDir(), this.accounts);
-    let existingAccounts = [];
+    let existingAccounts: Account[] = [];
     if (!fs.existsSync(localPath)) {
       existingAccounts = accounts;
       fs.writeFileSync(localPath, JSON.stringify(existingAccounts, null, 2), 'utf8');
@@ -147,11 +149,9 @@ export default class Storage {
       return;
     }
 
-    const existingMap = {};
+    const existingMap: { [key: string]: Account } = {};
     for (const acc of existingAccounts) {
-      if (acc && acc.id) {
-        existingMap[acc.id] = acc;
-      }
+      existingMap[acc.id] = acc;
     }
     for (const newAcc of accounts) {
       existingMap[newAcc.id] = newAcc;
@@ -160,24 +160,25 @@ export default class Storage {
     fs.writeFileSync(localPath, JSON.stringify(mergedAccounts, null, 2), 'utf8');
   }
 
-  getAccount(id) {
+  getAccount(id: string): Account | null {
     const localPath = join(this.getUserDir(), this.accounts);
     if (!fs.existsSync(localPath)) {
       logger.error('Accounts file not found');
       return null;
     }
 
-    let accounts = JSON.parse(fs.readFileSync(localPath, 'utf8'));
-    return accounts.find(account => account.id === id);
+    let accounts: Account[] = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+    let result = accounts.find(account => account.id === id);
+    return result || null;
   }
 
-  getAccounts(filter) {
+  getAccounts(filter: AccountFilter): Account[] {
     const localPath = join(this.getUserDir(), this.accounts);
     if (!fs.existsSync(localPath)) {
       logger.error('Accounts file not found');
       return [];
     }
-    let accounts = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+    let accounts: Account[] = JSON.parse(fs.readFileSync(localPath, 'utf8'));
     return accounts.filter(account => {
       if (filter.title) {
         if (!account.title.includes(filter.title)) {
@@ -188,14 +189,14 @@ export default class Storage {
     });
   }
 
-  getTransactions(filter) {
+  getTransactions(filter: StorageFilter): Transaction[] {
     const localPath = join(this.getUserDir(), this.transactions);
     if (!fs.existsSync(localPath)) {
       logger.error('Transactions file not found');
       return [];
     }
 
-    let transactions = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+    let transactions: Transaction[] = JSON.parse(fs.readFileSync(localPath, 'utf8'));
 
     if (filter) {
       transactions = transactions.filter(item => {
@@ -233,5 +234,14 @@ export default class Storage {
       });
     }
     return transactions;
+  }
+
+  getMerchant(title: string): Merchant | null {
+    const diffFile = join(this.getUserDir(), this.diffFILE);
+    let data = JSON.parse(fs.readFileSync(diffFile, 'utf8'));
+    let array = data.merchant || [];
+    let found = array.find((m: Merchant) => m.title.toLowerCase() === title.toLowerCase());
+    return found || null;
+    const localPath = join(this.getUserDir(), 'merchants.json')
   }
 }

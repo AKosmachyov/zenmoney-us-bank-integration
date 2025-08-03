@@ -1,8 +1,8 @@
-import Zenmoney from './Zenmoney.js';
-import { type Zenmoney as ZenmoneyType } from './utils/typing.ts';
+import Zenmoney from './Zenmoney.ts';
 import { logger } from './utils/Logger.ts';
 import { CompareTwoUserAccounts } from './utils/CompareTwoUserAccounts.ts';
 import { CompareTransactionsWithBank } from './utils/CompareTransactionsWithBank.ts';
+import { createDateWithoutTimeZone } from './utils/date.ts';
 
 async function main() {
     const username = process.env.ZEN_USER;
@@ -15,7 +15,7 @@ async function main() {
     // new Storage(username).sortSavedTransactions();
     // return;
 
-    const zenmoney: ZenmoneyType = new Zenmoney(username, password);
+    const zenmoney = new Zenmoney(username, password);
     if (!zenmoney.canSkipLogin()) {
         logger.log('Start Login');
         await zenmoney.login();
@@ -32,13 +32,16 @@ async function main() {
     );
 
 
-    // let right = new Zenmoney('', '')
+    // let right = new Zenmoney('user_2', 'pwd_2')
+    // await right.syncDiff();
     // let compare = new CompareTwoUserAccounts(zenmoney, right);
-    // compare.compare(
-    //     new Date('2025-06-01'),
-    //     'merchant-id for left',
-    //     'merchant-id-for right'
-    // );
+    compare.compare(
+        createDateWithoutTimeZone('2025-06-01'),
+        createDateWithoutTimeZone('2025-06-02'),
+        'merchant title for left',
+        'merchant title for right',
+        'account id for expenses'
+    );
 }
 
 main();

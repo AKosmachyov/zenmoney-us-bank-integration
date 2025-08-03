@@ -1,5 +1,8 @@
-import { type Transaction, type Zenmoney } from "./typing.ts";
+import type Zenmoney from '../Zenmoney.ts';
+import { type Account, type Transaction, type TransactionUpdateType } from "./typing.ts";
 import { logger, debugStringForTransaction } from "./Logger.ts";
+import readline from 'readline';
+import { convertAccountToUpdate, convertBankTransaction, createDebtTransaction } from './converter.ts';
 
 export class CompareTwoUserAccounts {
   left: Zenmoney;
@@ -10,8 +13,14 @@ export class CompareTwoUserAccounts {
     this.right = right;
   }
 
-  compare(startDate: Date, endDate: Date, leftPayee: string, rightPayee: string) {
-    let debtTitle = "Debts"
+  async compare(
+    startDate: Date,
+    endDate: Date,
+    leftPayee: string,
+    rightPayee: string,
+    accountIdForMissedTransactions: string
+  ) {
+    let debtTitle = "Debts";
     let leftDebtAccount = this.left.getAccounts({ title: debtTitle })[0];
     let rightDebtAccount = this.right.getAccounts({ title: debtTitle })[0];
 
@@ -46,6 +55,59 @@ export class CompareTwoUserAccounts {
         .map(el => debugStringForTransaction(el, leftDebtAccount.id))
         .join(',\n')
     );
+
+    if (missed.length === 0) {
+      return;
+    }
+
+    let shouldAddTransactions = await this.askUserToAddTransactions();
+    if (!shouldAddTransactions) {
+      return;
+    }
+
+    let leftMerchant = this.left.getMerchant(leftPayee);
+    let accountForExpenses = this.left.getAccount(accountIdForMissedTransactions);
+    if (!accountForExpenses || !leftMerchant) {
+      throw new Error("Account or Merchant not found");
+    }
+
+    let transactionsForAdd: TransactionUpdateType[] = [];
+    for (const tx of missed) {
+      let amount = 0;
+      let comment = tx.comment || '';
+      let date = tx.date;
+      if (tx.outcomeAccount == rightDebtAccount.id) {
+        amount = -tx.outcome;
+      }
+      if (tx.incomeAccount == rightDebtAccount.id) {
+        amount = tx.income;
+      }
+
+      let debt = createDebtTransaction(
+        leftDebtAccount,
+        accountForExpenses,
+        amount,
+        date,
+        comment,
+        leftMerchant
+      )
+      transactionsForAdd.push(debt);
+
+      if (amount > 0) {
+        let expense = convertBankTransaction(
+          { amount: -amount, date, comment },
+          leftDebtAccount.user,
+          [],
+          accountForExpenses.id
+        )
+        transactionsForAdd.push(expense);
+      }
+    }
+
+    await this.left.syncDiff({
+      transactions: transactionsForAdd,
+      accounts: convertAccountToUpdate([accountForExpenses, leftDebtAccount]),
+    });
   }
 
   /**
@@ -92,5 +154,22 @@ export class CompareTwoUserAccounts {
     );
     return diffDays <= 1;
   }
+
+  async askUserToAddTransactions(): Promise<boolean> {
+    return new Promise((resolve) => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+      rl.question(
+        'Do you want to add these transactions to Zenmoney? (y/n): ',
+        (answer: string) => {
+          rl.close();
+          resolve(answer.trim().toLowerCase() === 'y');
+        }
+      );
+    });
+  }
+
 }
 
