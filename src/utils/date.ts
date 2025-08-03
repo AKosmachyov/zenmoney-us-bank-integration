@@ -14,3 +14,8 @@ export function getDateTwoWeeksAgo(date: Date): Date {
 
     return twoWeeksAgo;
 }
+
+export function toIsoDateString(text: string): string {
+    const [mm, dd, yyyy] = text.split('/').map(s => s.padStart(2, '0'));
+    return `${yyyy}-${mm}-${dd}`;
+}

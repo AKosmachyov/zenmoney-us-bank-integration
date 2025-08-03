@@ -1,5 +1,5 @@
 import { type Transaction, type Zenmoney } from "./typing.ts";
-import { logger } from "./Logger.ts";
+import { logger, debugStringForTransaction } from "./Logger.ts";
 
 export class CompareTwoUserAccounts {
   left: Zenmoney;
@@ -10,28 +10,40 @@ export class CompareTwoUserAccounts {
     this.right = right;
   }
 
-  compare(startDate: Date, leftMerchant: string, rightMerchant: string) {
-    let leftTransactions = this.left.getStorage().getTransactions({
+  compare(startDate: Date, endDate: Date, leftPayee: string, rightPayee: string) {
+    let debtTitle = "Debts"
+    let leftDebtAccount = this.left.getAccounts({ title: debtTitle })[0];
+    let rightDebtAccount = this.right.getAccounts({ title: debtTitle })[0];
+
+    if (!leftDebtAccount || !rightDebtAccount) {
+      throw new Error("Debt account not found");
+    }
+
+    let leftTransactions = this.left.getTransactions({
       startDate,
-      merchant: leftMerchant
+      endDate,
+      payee: leftPayee,
+      bankAccountId: leftDebtAccount.id
     })
-    let rightTransactions = this.right.getStorage().getTransactions({
+    let rightTransactions = this.right.getTransactions({
       startDate,
-      merchant: rightMerchant
+      endDate,
+      payee: rightPayee,
+      bankAccountId: rightDebtAccount.id
     });
 
-    const { missed, extra } = this.findDiff(leftTransactions, rightTransactions);
+    const { missed, extra } = this.findDiff(leftTransactions, rightTransactions, leftDebtAccount.id, rightDebtAccount.id);
 
-    logger.log(
+    logger.debug(
       "Missed transactions:\n",
       missed
-        .map(el => this.formatTransaction(el))
+        .map(el => debugStringForTransaction(el, rightDebtAccount.id))
         .join(',\n')
     );
-    logger.log(
+    logger.debug(
       "Extra transactions:\n",
       extra
-        .map(el => this.formatTransaction(el))
+        .map(el => debugStringForTransaction(el, leftDebtAccount.id))
         .join(',\n')
     );
   }
@@ -44,46 +56,41 @@ export class CompareTwoUserAccounts {
    *  1. Their net amount (income - outcome) is identical (to two decimal places)
    *  2. The difference between their dates is not larger than one calendar day
    */
-  private findDiff(left: Transaction[], right: Transaction[]) {
+  private findDiff(left: Transaction[], right: Transaction[], leftDebtAccountId: string, rightDebtAccountId: string) {
     // Work with shallow copies so we can mutate safely
     const rightPool: Transaction[] = [...right];
-    const missed: Transaction[] = [];
+    const extra: Transaction[] = [];
 
     for (const lTx of left) {
-      const idx = rightPool.findIndex(rTx => this.isSameTransaction(lTx, rTx));
+      const idx = rightPool.findIndex(rTx => this.isSameTransaction(lTx, rTx, leftDebtAccountId, rightDebtAccountId));
       if (idx === -1) {
-        missed.push(lTx);
+        extra.push(lTx);
       } else {
         // Consume the matched transaction so it cannot match again
         rightPool.splice(idx, 1);
       }
     }
 
-    const extra: Transaction[] = rightPool; // whatever was not matched
+    const missed: Transaction[] = rightPool;
     return { missed, extra };
   }
 
   /**
    * Determines if two transactions should be treated as representing the same operation.
    */
-  private isSameTransaction(left: Transaction, right: Transaction): boolean {
-    if (left.outcome !== right.outcome) return false;
+  private isSameTransaction(left: Transaction, right: Transaction, leftDebtAccountId: string, rightDebtAccountId: string): boolean {
+    // for lent -amount, for debt +amount
+    let leftAmount = left.incomeAccount === leftDebtAccountId ? -left.outcome : left.outcome;
+    // keep the same sign for debt
+    let rightAmount = right.outcomeAccount === rightDebtAccountId ? -right.income : right.income;
+
+    if (leftAmount !== rightAmount) return false;
 
     // Compare dates with tolerance of ±1 day
     const diffDays = Math.abs(
       (new Date(left.date).getTime() - new Date(right.date).getTime()) / (24 * 60 * 60 * 1000)
     );
     return diffDays <= 1;
-  }
-
-  private formatTransaction(transaction: Transaction): string {
-    let comment = (transaction.comment ?? '').trim().replaceAll('\n', '\\n ');
-    let result = [
-      `"${transaction.date}"`,
-      `"${comment}"`,
-      Number(transaction.income).toFixed(2),
-    ]
-    return `[${result.join(',')}]`;
   }
 }
 

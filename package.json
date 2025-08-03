@@ -1,0 +1,28 @@
+{
+  "name": "zenmoney-us-bank-integration",
+  "version": "0.0.1",
+  "description": "Sync USA banks balance with https://zenmoney.app/",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --experimental-transform-types --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AKosmachyov/zenmoney-us-bank-integration.git"
+  },
+  "keywords": [
+    "zenmoney",
+    "bank",
+    "cli"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AKosmachyov/zenmoney-us-bank-integration/issues"
+  },
+  "homepage": "https://github.com/AKosmachyov/zenmoney-us-bank-integration#readme",
+  "devDependencies": {
+    "@types/node": "^24.0.15"
+  },
+  "type": "module"
+}

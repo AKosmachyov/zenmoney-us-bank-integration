@@ -33,3 +33,4 @@ node --experimental-transform-types --env-file=.env ./src/main.ts
 
 - PayPal - download QIF format from [link](https://www.paypal.com/reports/dlog)
 - Bank of America (BofA) - download any QIF file from [link](https://www.bankofamerica.com) Menu -> Accounts -> scroll to Activity -> Download button
+- American Express (Amex) - download CSV from [link](https://global.americanexpress.com/activity) -> Download -> select "csv"

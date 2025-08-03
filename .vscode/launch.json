@@ -7,13 +7,25 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Run main.ts",
+            "name": "Run main.ts with env",
             "skipFiles": [
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}/src/main.ts",
             "runtimeArgs": ["--experimental-transform-types"],
-            "envFile": "${workspaceFolder}/.env"
+            "envFile": "${workspaceFolder}/.env",
+            "console": "integratedTerminal"
+        },
+         {
+            "type": "node",
+            "request": "launch",
+            "name": "Current File",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "program": "${file}",
+            "runtimeArgs": ["--experimental-transform-types"],
+            "console": "integratedTerminal"
         }
     ]
 }

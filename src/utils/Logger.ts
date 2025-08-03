@@ -21,11 +21,25 @@ class Logger {
 
 export const logger = new Logger();
 
-export function debugStringForTransaction(transaction: Transaction): string {
+export function debugStringForTransaction(
+    transaction: Transaction,
+    debtAccountId?: string,
+): string {
     let amount = transaction.income > 0 ? transaction.income : -transaction.outcome;
-    return `${transaction.date} ${amount} ${transaction.comment}`;
+
+    if (debtAccountId) {
+        if (transaction.outcomeAccount == debtAccountId) {
+            amount = -transaction.outcome;
+        }
+
+        if (transaction.incomeAccount == debtAccountId) {
+            amount = transaction.income;
+        }
+    }
+    let comment = (transaction.comment ?? '').trim().replaceAll('\n', '\\n ');
+    return `${transaction.date} ${amount}, ${comment}`;
 }
 
 export function debugStringForBankTransaction(transaction: BankTransaction): string {
-    return `${transaction.date} ${transaction.amount} ${transaction.comment}`;
+    return `${transaction.date} ${transaction.amount}, ${transaction.comment}`;
 }

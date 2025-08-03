@@ -29,7 +29,7 @@ export type Transaction = {
     incomeInstrument: number,
     outcomeInstrument: number,
     viewed: boolean,
-    payee: null,
+    payee: string | null,
     originalPayee: null,
     opOutcomeInstrument: null,
 }
@@ -142,8 +142,9 @@ export type BankTransaction = {
 export type Zenmoney = {
     canSkipLogin: () => boolean;
     login: () => Promise<void>;
-    syncDiff: (updateData: DiffUpdateData) => Promise<void>;
+    syncDiff: (updateData?: DiffUpdateData) => Promise<void>;
     getAccount: (id: string) => Account;
+    getAccounts: (filter: AccountFilter) => Account[];
     getTransactions: (filter: StorageFilter) => Transaction[];
 }
 
@@ -154,6 +155,12 @@ export type DiffUpdateData = {
 
 export type StorageFilter = {
     startDate?: Date,
+    endDate?: Date,
     merchant?: string,
     bankAccountId?: string,
+    payee?: string,
+}
+
+export type AccountFilter = {
+    title?: string,
 }

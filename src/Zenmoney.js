@@ -127,6 +127,10 @@ export default class Zenmoney {
     return this.storage.getAccount(id);
   }
 
+  getAccounts(filter) {
+    return this.storage.getAccounts(filter);
+  }
+
   getTransactions(filter) {
     return this.storage.getTransactions(filter);
   }

@@ -2,6 +2,7 @@ import fs from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { logger } from './Logger.ts';
+import { createDateWithoutTimeZone } from './date.ts';
 
 export default class Storage {
 
@@ -170,6 +171,23 @@ export default class Storage {
     return accounts.find(account => account.id === id);
   }
 
+  getAccounts(filter) {
+    const localPath = join(this.getUserDir(), this.accounts);
+    if (!fs.existsSync(localPath)) {
+      logger.error('Accounts file not found');
+      return [];
+    }
+    let accounts = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+    return accounts.filter(account => {
+      if (filter.title) {
+        if (!account.title.includes(filter.title)) {
+          return false
+        }
+      }
+      return true;
+    });
+  }
+
   getTransactions(filter) {
     const localPath = join(this.getUserDir(), this.transactions);
     if (!fs.existsSync(localPath)) {
@@ -182,10 +200,21 @@ export default class Storage {
     if (filter) {
       transactions = transactions.filter(item => {
         if (filter.startDate) {
-          const transactionDate = new Date(item.date);
+          const transactionDate = createDateWithoutTimeZone(item.date)
           if (filter.startDate > transactionDate) {
             return false
           }
+        }
+
+        if (filter.endDate) {
+          const transactionDate = createDateWithoutTimeZone(item.date)
+          if (filter.endDate < transactionDate) {
+            return false
+          }
+        }
+
+        if (filter.payee && filter.payee != item.payee) {
+          return false;
         }
 
         if (filter.merchant && filter.merchant != item.merchant) {
