@@ -1,16 +1,85 @@
-import type Zenmoney from '../Zenmoney.ts';
-import { type Account, type Transaction, type TransactionUpdateType } from "./typing.ts";
+import { type Transaction, type TransactionUpdateType } from "./typing.ts";
 import { logger, debugStringForTransaction } from "./Logger.ts";
-import readline from 'readline';
 import { convertAccountToUpdate, convertBankTransaction, createDebtTransaction } from './converter.ts';
+import inquirer from 'inquirer';
+import { createDateWithoutTimeZone, getDateTwoWeeksAgo, toISODateString } from './date.ts';
+import Zenmoney from '../Zenmoney.ts';
 
 export class CompareTwoUserAccounts {
   left: Zenmoney;
-  right: Zenmoney;
+  right?: Zenmoney;
 
-  constructor(left: Zenmoney, right: Zenmoney) {
+  constructor(left: Zenmoney) {
     this.left = left;
+  }
+
+  async setup() {
+    const answers = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'otherUsername',
+        message: 'Other Zenmoney username:',
+        validate: (v: string) => !!v || 'Username is required'
+      },
+      {
+        type: 'password',
+        name: 'otherPassword',
+        message: 'Other Zenmoney password:',
+        mask: '*',
+        validate: (v: string) => !!v || 'Password is required'
+      },
+    ]);
+
+    const right = new Zenmoney(answers.otherUsername, answers.otherPassword);
+    await right.syncDiff();
     this.right = right;
+
+    let details = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'startDate',
+        message: 'Compare from date in format YYYY-MM-DD:',
+        default: () => {
+          return getDateTwoWeeksAgo();
+        }
+      },
+      {
+        type: 'input',
+        name: 'leftPayee',
+        message: 'Debt account title (exact as in Zenmoney):',
+        validate: (v: string) => !!v || 'Debt account title is required'
+      },
+      {
+        type: 'input',
+        name: 'rightPayee',
+        message: "Debt account title in other user's Zenmoney (exact as in Zenmoney):",
+        validate: (v: string) => !!v || 'Debt account title is required'
+      },
+      {
+        type: 'input',
+        name: 'accountIdForMissedTransactions',
+        message: 'Account title for missed transactions:',
+        validate: (v: string) => !!v || 'Account title is required'
+      }
+    ]);
+
+    const { startDate, leftPayee, rightPayee, accountIdForMissedTransactions } = details;
+    let account = this.left.getAccounts({ title: accountIdForMissedTransactions })[0];
+
+    if (!account) {
+      throw new Error("Account not found");
+    }
+
+    const start = createDateWithoutTimeZone(startDate);
+    const end = new Date();
+
+    await this.compare(
+      start,
+      end,
+      leftPayee,
+      rightPayee,
+      account.id
+    );
   }
 
   async compare(
@@ -18,11 +87,15 @@ export class CompareTwoUserAccounts {
     endDate: Date,
     leftPayee: string,
     rightPayee: string,
-    accountIdForMissedTransactions: string
+    accountIdForMissedTransactions?: string
   ) {
-    let debtTitle = "Debts";
-    let leftDebtAccount = this.left.getAccounts({ title: debtTitle })[0];
-    let rightDebtAccount = this.right.getAccounts({ title: debtTitle })[0];
+    if (!this.right) {
+      throw new Error("Right Zenmoney not set");
+    }
+
+    let debtAccountType = 'debt';
+    let leftDebtAccount = this.left.getAccounts({ type: debtAccountType })[0];
+    let rightDebtAccount = this.right.getAccounts({ type: debtAccountType })[0];
 
     if (!leftDebtAccount || !rightDebtAccount) {
       throw new Error("Debt account not found");
@@ -41,7 +114,12 @@ export class CompareTwoUserAccounts {
       bankAccountId: rightDebtAccount.id
     });
 
-    const { missed, extra } = this.findDiff(leftTransactions, rightTransactions, leftDebtAccount.id, rightDebtAccount.id);
+    const { missed, extra } = this.findDiff(
+      leftTransactions,
+      rightTransactions,
+      leftDebtAccount.id,
+      rightDebtAccount.id
+    );
 
     logger.debug(
       "Missed transactions:\n",
@@ -56,7 +134,7 @@ export class CompareTwoUserAccounts {
         .join(',\n')
     );
 
-    if (missed.length === 0) {
+    if (missed.length === 0 || !accountIdForMissedTransactions) {
       return;
     }
 
@@ -156,20 +234,14 @@ export class CompareTwoUserAccounts {
   }
 
   async askUserToAddTransactions(): Promise<boolean> {
-    return new Promise((resolve) => {
-      const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-      });
-      rl.question(
-        'Do you want to add these transactions to Zenmoney? (y/n): ',
-        (answer: string) => {
-          rl.close();
-          resolve(answer.trim().toLowerCase() === 'y');
-        }
-      );
-    });
+    const { choice } = await inquirer.prompt([{
+      type: 'list',
+      name: 'choice',
+      message: 'Do you want to add these transactions to Zenmoney? (y/n): ',
+      choices: ['yes', 'no'],
+    }]);
+
+    return choice === 'yes';
   }
 
 }
-

@@ -3,6 +3,7 @@ import inquirer from 'inquirer';
 import fs from 'fs';
 import { logger } from './utils/Logger.ts';
 import { CompareTransactionsWithBank } from './utils/CompareTransactionsWithBank.ts';
+import { CompareTwoUserAccounts } from './utils/CompareTwoUserAccounts.ts';
 
 class Main {
     private zenmoney: Zenmoney;
@@ -23,6 +24,7 @@ class Main {
             await this.login();
         }
         await this.syncChanges();
+        await this.showMenu();
     }
 
     async login() {
@@ -72,60 +74,66 @@ class Main {
             filePath = filePath.slice(0, -1);
         }
 
+        let accounts = await this.zenmoney.getAccounts();
+
+        const { choice } = await inquirer.prompt([{
+            type: 'list',
+            name: 'choice',
+            message: 'Select an account:',
+            choices: accounts.map(account => account.title),
+            pageSize: 10,
+        }]);
+
+        let account = accounts.find(account => account.title === choice);
+
+        if (!account) {
+            logger.error('Account not found');
+            return;
+        }
+
         await new CompareTransactionsWithBank().compare(
             this.zenmoney,
-            '<account_id>',
+            account.id,
             filePath
         );
+    }
 
-        // 3. Extract unique account titles
-        // const uniqueTitles = Array.from(
-        //     new Set(
-        //         transactions
-        //             .map(tx => tx.accountTitle)
-        //             .filter(t => typeof t === 'string' && t.trim())
-        //     )
-        // );
+    async syncWithAnotherUser() {
+        const compare = new CompareTwoUserAccounts(this.zenmoney);
+        await compare.setup();
+    }
 
-        // 4. Prompt to select or add
-        // const { choice } = await inquirer.prompt([{
-        //     type: 'list',
-        //     name: 'choice',
-        //     message: 'Select an account title or add a new one:',
-        //     choices: [
-        //         ...uniqueTitles,
-        //         new inquirer.Separator(),
-        //         'Add a new account title'
-        //     ]
-        // }]);
+    async showMenu() {
+        const { action } = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'action',
+                message: 'What would you like to do?',
+                choices: [
+                    { name: 'Import transactions from a bank file', value: 'syncFromFile' },
+                    { name: 'Compare and sync with another user', value: 'syncWithAnotherUser' },
+                    { name: 'Exit', value: 'exit' },
+                ]
+            }
+        ]);
 
-        // // 5. If “add new”, ask for input
-        // let accountTitle = choice;
-        // if (choice === 'Add a new account title') {
-        //     const { newTitle } = await inquirer.prompt([{
-        //         type: 'input',
-        //         name: 'newTitle',
-        //         message: 'Enter the new account title:',
-        //         validate(input) {
-        //             return input.trim()
-        //                 ? true
-        //                 : 'Account title cannot be empty.';
-        //         }
-        //     }]);
-        //     accountTitle = newTitle.trim();
-        // }
-
-        // console.log('✅ Selected account title:', accountTitle);
-        // …proceed with accountTitle…
+        switch (action) {
+            case 'syncFromFile':
+                await this.syncFromFile();
+                break;
+            case 'syncWithAnotherUser':
+                await this.syncWithAnotherUser();
+                break;
+            default:
+                logger.log('Goodbye!');
+                process.exit(0);
+        }
     }
 }
 
 let main = new Main()
 main
     .setup()
-    .then(() => {
-        main.syncFromFile();
-    })
     .catch(err => {
         logger.error('Fatal error:', err);
         process.exit(1);

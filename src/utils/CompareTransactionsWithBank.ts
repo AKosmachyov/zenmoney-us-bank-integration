@@ -2,9 +2,9 @@ import { convertQifToZenmoney, convertBankTransaction, convertAccountToUpdate } 
 import { parseFile } from './qif2json.ts';
 import type Zenmoney from '../Zenmoney.ts';
 import { logger, debugStringForBankTransaction, debugStringForTransaction } from './Logger.ts';
-import { type BankTransaction } from './typing.ts';
-import readline from 'readline';
+import { type Account, type BankTransaction } from './typing.ts';
 import { compareForBank } from './comparing.ts';
+import inquirer from 'inquirer';
 
 export class CompareTransactionsWithBank {
 	async compare(zen: Zenmoney, accountId: string, filePath: string) {
@@ -15,7 +15,7 @@ export class CompareTransactionsWithBank {
 			throw new Error('Account not found');
 		}
 
-		let bankTransactions = await this.loadTransactions(filePath);
+		let bankTransactions = await this.loadTransactions(filePath, account);
 
 		if (bankTransactions.length === 0) {
 			throw new Error('No bank transactions found');
@@ -25,9 +25,11 @@ export class CompareTransactionsWithBank {
 			return +new Date(b.date) - +new Date(a.date);
 		});
 		let startDate = bankTransactions[bankTransactions.length - 1].date;
+		let endDate = bankTransactions[0].date;
 
 		let zenTransactions = zen.getTransactions({
 			startDate: new Date(startDate),
+			endDate: new Date(endDate),
 			bankAccountId: accountId,
 		});
 
@@ -69,27 +71,24 @@ export class CompareTransactionsWithBank {
 	}
 
 	async askUserToAddTransactions(): Promise<boolean> {
-		return new Promise((resolve) => {
-			const rl = readline.createInterface({
-				input: process.stdin,
-				output: process.stdout
-			});
-			rl.question(
-				'Do you want to add these transactions to Zenmoney? (y/n): ',
-				(answer: string) => {
-					rl.close();
-					resolve(answer.trim().toLowerCase() === 'y');
-				}
-			);
-		});
+		const { choice } = await inquirer.prompt([{
+			type: 'list',
+			name: 'choice',
+			message: 'Do you want to add these transactions to Zenmoney? (y/n): ',
+			choices: ['yes', 'no'],
+		}]);
+
+		return choice === 'yes';
 	}
 
-	async loadTransactions(filePath: string): Promise<BankTransaction[]> {
+	async loadTransactions(filePath: string, account: Account): Promise<BankTransaction[]> {
 		let ext = filePath.split('.').pop()?.toLowerCase();
 		switch (ext) {
 			case 'csv':
 				const { parseCSVToBankTx } = await import('./csvParser.ts');
-				return await parseCSVToBankTx(filePath);
+				let title = account.title.toLowerCase();
+				let invertSign = title.includes('amex') || title.includes('american express');
+				return await parseCSVToBankTx(filePath, invertSign);
 			case 'qif':
 				return await this.parseQifFile(filePath);
 			default:

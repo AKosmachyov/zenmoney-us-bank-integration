@@ -133,7 +133,7 @@ export default class Zenmoney {
     return this.storage.getAccount(id);
   }
 
-  getAccounts(filter: AccountFilter): Account[] {
+  getAccounts(filter: AccountFilter = {}): Account[] {
     return this.storage.getAccounts(filter);
   }
 

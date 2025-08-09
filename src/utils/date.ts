@@ -8,11 +8,14 @@ export function createDateWithoutTimeZone(dateString: string): Date {
     return dateWithoutTimeZone;
 }
 
-export function getDateTwoWeeksAgo(date: Date): Date {
-    const twoWeeksAgo = new Date(date);
-    twoWeeksAgo.setDate(date.getDate() - 14);
+export function getDateTwoWeeksAgo(): string {
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
-    return twoWeeksAgo;
+    const yyyy = twoWeeksAgo.getFullYear();
+    const mm = String(twoWeeksAgo.getMonth() + 1).padStart(2, '0');
+    const dd = String(twoWeeksAgo.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
 }
 
 export function dateToZenmoneyTextFormat(date: Date): string {
@@ -23,8 +26,20 @@ export function dateToZenmoneyTextFormat(date: Date): string {
 }
 
 export function toISODateString(text: string): string {
-    const [mm, dd, yyyy] = text.split('/').map(s => s.padStart(2, '0'));
-    return `${yyyy}-${mm}-${dd}`;
+    const trimmed = text.trim();
+
+    // If already in ISO format: YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+        return trimmed;
+    }
+
+    // If in MM/DD/YYYY
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
+        const [mm, dd, yyyy] = trimmed.split('/').map(s => s.padStart(2, '0'));
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    throw new Error(`Unrecognized date format: "${text}"`);
 }
 
 const msPerDay = 1000 * 60 * 60 * 24;

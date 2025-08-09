@@ -12,11 +12,13 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}/src/main.ts",
-            "runtimeArgs": ["--experimental-transform-types"],
+            "runtimeArgs": [
+                "--experimental-transform-types"
+            ],
             "envFile": "${workspaceFolder}/.env",
             "console": "integratedTerminal"
         },
-         {
+        {
             "type": "node",
             "request": "launch",
             "name": "Current File",
@@ -24,7 +26,19 @@
                 "<node_internals>/**"
             ],
             "program": "${file}",
-            "runtimeArgs": ["--experimental-transform-types"],
+            "runtimeArgs": [
+                "--experimental-transform-types"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Run tests",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "test"
+            ],
             "console": "integratedTerminal"
         }
     ]

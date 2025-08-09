@@ -172,21 +172,37 @@ export default class Storage {
     return result || null;
   }
 
-  getAccounts(filter: AccountFilter): Account[] {
+  getAccounts(filter: AccountFilter = {}): Account[] {
     const localPath = join(this.getUserDir(), this.accounts);
     if (!fs.existsSync(localPath)) {
       logger.error('Accounts file not found');
       return [];
     }
     let accounts: Account[] = JSON.parse(fs.readFileSync(localPath, 'utf8'));
-    return accounts.filter(account => {
-      if (filter.title) {
-        if (!account.title.includes(filter.title)) {
+
+    var result = accounts;
+    if (Object.keys(filter).length > 0) {
+      let title = filter.title?.trim().toLowerCase() || '';
+
+      result = accounts.filter(account => {
+        if (title) {
+          if (!account.title.toLowerCase().includes(title)) {
+            return false
+          }
+        }
+
+        if (filter.type && filter.type !== account.type) {
           return false
         }
-      }
-      return true;
+        return true;
+      });
+    }
+
+    result.sort((a, b) => {
+      return a.title.localeCompare(b.title);
     });
+
+    return result;
   }
 
   getTransactions(filter: StorageFilter): Transaction[] {

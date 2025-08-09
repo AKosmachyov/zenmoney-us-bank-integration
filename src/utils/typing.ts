@@ -69,10 +69,10 @@ export type TransactionUpdateType = {
     opOutcomeInstrument: null,
 }
 
-type AccountType = "ccard" | "cash" | "checking" | "deposit" | "debt";
-type BalanceCorrectionType = "request";
-type EndDateOffsetInterval = "year" | "day" | "month" | null;
-type PayoffInterval = "month" | null;
+export type AccountType = 'ccard' | 'cash' | 'checking' | 'deposit' | 'debt';
+type BalanceCorrectionType = 'request';
+type EndDateOffsetInterval = 'year' | 'day' | 'month' | null;
+type PayoffInterval = 'month' | null;
 export type Account = {
     id: string;
     user: number;
@@ -153,6 +153,7 @@ export type StorageFilter = {
 
 export type AccountFilter = {
     title?: string,
+    type?: AccountType,
 }
 
 export type UserModel = {

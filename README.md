@@ -34,16 +34,18 @@ npm start
 ```
 
 ## TODO:
-- [] Increase test coverage (`npm test`)
-- [] CLI Menu or UI (to select File and link with Bank account)
-- [] Investigate `simplefin.org` sync option
-- [] Setup e2e for getting balance changes (using Cypress, Playwright, Puppeteer)
+- [x] Increase test coverage (`npm test`)
+- [x] CLI Menu or UI (to select File and link with Bank account)
+- [ ] Investigate `simplefin.org` sync option
+- [ ] Setup e2e for getting balance changes (using Cypress, Playwright, Puppeteer)
 
 ## Integration
 
 - PayPal - download QIF format from [link](https://www.paypal.com/reports/dlog)
 - Bank of America (BofA) - download any QIF file from [link](https://www.bankofamerica.com) Menu -> Accounts -> scroll to Activity -> Download button
-- American Express (Amex) - download CSV from [link](https://global.americanexpress.com/activity) -> Download -> select "csv"
+- American Express (Amex) - download CSV from [link](https://global.americanexpress.com/activity) -> Download -> select "CSV"
+- Discover - download CSV from [link](https://card.discover.com/cardmembersvcs/statements/app/activity#/recent) -> View Activity & Statements -> Download -> select "CSV"
+- SoFi - [link](https://www.sofi.com/my/money/account/more/export-transaction-history) -> Select Account -> Select date range -> press "Export"
 
 ## Other integration options
 - [Plaid](https://plaid.com) - can be opened for personal use.
