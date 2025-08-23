@@ -120,9 +120,11 @@ class Main {
         switch (action) {
             case 'syncFromFile':
                 await this.syncFromFile();
+                await this.showMenu();
                 break;
             case 'syncWithAnotherUser':
                 await this.syncWithAnotherUser();
+                await this.showMenu();
                 break;
             default:
                 logger.log('Goodbye!');

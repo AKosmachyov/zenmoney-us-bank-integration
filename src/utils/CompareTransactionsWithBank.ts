@@ -1,10 +1,11 @@
+import inquirer from 'inquirer';
 import { convertQifToZenmoney, convertBankTransaction, convertAccountToUpdate } from './converter.ts';
 import { parseFile } from './qif2json.ts';
 import type Zenmoney from '../Zenmoney.ts';
 import { logger, debugStringForBankTransaction, debugStringForTransaction } from './Logger.ts';
 import { type Account, type BankTransaction } from './typing.ts';
 import { compareForBank } from './comparing.ts';
-import inquirer from 'inquirer';
+import { createDateWithoutTimeZone } from './date.ts';
 
 export class CompareTransactionsWithBank {
 	async compare(zen: Zenmoney, accountId: string, filePath: string) {
@@ -28,8 +29,8 @@ export class CompareTransactionsWithBank {
 		let endDate = bankTransactions[0].date;
 
 		let zenTransactions = zen.getTransactions({
-			startDate: new Date(startDate),
-			endDate: new Date(endDate),
+			startDate: createDateWithoutTimeZone(startDate),
+			endDate: createDateWithoutTimeZone(endDate),
 			bankAccountId: accountId,
 		});
 
@@ -59,6 +60,7 @@ export class CompareTransactionsWithBank {
 
 		const shouldAddTransactions = await this.askUserToAddTransactions();
 		if (!shouldAddTransactions) {
+			logger.log('Skipping adding transactions to Zenmoney.');
 			return;
 		}
 
@@ -68,6 +70,8 @@ export class CompareTransactionsWithBank {
 			transactions: transactions,
 			accounts: convertAccountToUpdate([account]),
 		});
+
+		logger.log('Transactions added to Zenmoney.');
 	}
 
 	async askUserToAddTransactions(): Promise<boolean> {

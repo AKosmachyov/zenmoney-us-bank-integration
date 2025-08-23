@@ -20,3 +20,25 @@ $0.00
 CX
 PWilliam
 ^
+!Type:Cash
+D07/06/2025
+T9.01
+LReversal of General Account Hold
+SReversal of General Account Hold
+$9.01
+SFee
+$0.00
+CX
+PPayPal
+^
+!Type:Cash
+D07/06/2025
+T-9.01
+LGeneral Authorization
+SGeneral Authorization
+$-9.01
+SFee
+$0.00
+CX
+PPUBLIX #1500
+^

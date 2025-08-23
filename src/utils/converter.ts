@@ -3,7 +3,17 @@ import { type BankTransaction, type TransactionUpdateType, type Account, type Ac
 import { randomUUID } from 'crypto';
 
 export function convertQifToZenmoney(qif: Qif): BankTransaction[] {
-	return qif.transactions.map(transaction => {
+	let paypalHoldReversal = 'Reversal of General Account Hold';
+
+	let transaction = qif.transactions.filter(transaction => {
+		let category = transaction.category;
+		if (category) {
+			return !category.includes(paypalHoldReversal);
+		}
+		return true;
+	});
+
+	return transaction.map(transaction => {
 		let comment = [transaction.payee];
 		if (transaction.category) {
 			// for PayPal source of payment
